@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      table {
+        width: 100%;
+      }
+
+      td {
+        width: fit-content;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simple Chat</h1>
+
+    <input type="text" id="message" placeholder="Mensagem" />
+    <button onclick="sendMessage();">Enviar</button>
+
+    <h3>Mensagens</h3>
+    <table id="message-list" border="1">
+      <tr>
+        <td>User</td>
+        <td>Date</td>
+        <td>Message</td>
+      </tr>
+    </table>
+    <script>
+      const messageList = document.getElementById('message-list');
+      let connected = false;
+      let state;
+
+      const socket = io();
+
+      socket.on('connect', () => {
+        connected = true;
+        console.log('> Connected to server');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('> Disconnected');
+        connected = false;
+      });
+
+      socket.on('bootstrap', (initialState) => {
+        state = initialState;
+
+        state.messages.forEach((m) => {
+          addMessage(m);
+        });
+      });
+
+      socket.on('user-update', ({ newMessages }) => {
+        newMessages.forEach((m) => {
+          state.messages.push(m);
+          addMessage(m);
+        });
+      });
+
+      function sendMessage() {
+        const text = document.getElementById('message').value;
+
+        const message = {
+          user: socket.id,
+          text,
+          date: new Date().toISOString(0),
+        };
+
+        socket.emit('user-message', message);
+
+        addMessage(message);
+      }
+
+      function addMessage({ user, text, date }) {
+        const messageItem = document.createElement('tr');
+
+        const userItem = document.createElement('td');
+        const dateItem = document.createElement('td');
+        const textItem = document.createElement('td');
+
+        userItem.innerText = `${user}`;
+        dateItem.innerText = `${new Date(date).toLocaleString('pt-BR')}`;
+        textItem.innerText = `${text}`;
+
+        messageItem.appendChild(userItem);
+        messageItem.appendChild(dateItem);
+        messageItem.appendChild(textItem);
+
+        messageList.appendChild(messageItem);
+      }
+    </script>
+  </body>
+</html>
